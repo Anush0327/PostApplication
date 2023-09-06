@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Blog post</title>
+<style>
+	/* Reset some default styles */
+body, ul {
+    margin: 0;
+    padding: 0;
+}
+
+/* Style the body */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    margin: 20px;
+}
+
+/* Style the header */
+h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+/* Style the post author's name */
+h1 span {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Style the post content */
+p {
+    font-size: 16px;
+    line-height: 1.4;
+    color: #555;
+}
+
+/* Style the Likes section */
+p span {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Style the button */
+#showLikers {
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+/* Style the liked users list */
+#unhideThisInJS {
+    visibility: hidden;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+/* Style the comment input form */
+form {
+    margin-top: 20px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+input[type="submit"] {
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+/* Style the comment and like buttons */
+input[type="submit"]:first-child {
+    margin-right: 10px;
+    background-color: #28a745;
+}
+
+/* Style the comment and like buttons on hover */
+input[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+</style>
+</head>
+<body th:object="${post}">
+	<h1>Post by <span th:text="*{author.name}">John Doe</span></h1>
+	<p th:text="*{content}">This is a post.</p>
+	<p>Likes: <span th:text="${likeCount}">0</span></p>
+	<button id="showLikers" >list of liked users</button>
+	<div id="unhideThisInJS" th:each="liker : ${allLikers}" style="visibility: hidden">
+		<ul>
+			<li th:text="${liker}">Liker</li>
+		</ul>
+	</div>
+	<div id="AllComments" th:each="comment : ${AllComments}">
+		<ul>
+			<li th:text="${comment}">Comment</li>
+		</ul>
+	</div>
+	<form method="post" action="#" th:action="@{/forum/post/{id}/{user_id}/like(id = ${post.id},user_id = *{author.id})}">
+		<input type="text" name="Comment">
+		<input type="submit" value="Comment!">
+		<input type="submit" value="Like!">
+	</form>
+	<script>
+		document.getElementById("showLikers").onclick = event => {
+			var likerList = document.getElementById("unhideThisInJS");
+			console.log(likerList.style);
+			if (likerList.style.cssText == "visibility: hidden;") {
+				likerList.style = "visibility: visible";
+			}
+			else {
+				likerList.style = "visibility: hidden";
+			}
+		}
+	</script>
+</body>
+</html>
