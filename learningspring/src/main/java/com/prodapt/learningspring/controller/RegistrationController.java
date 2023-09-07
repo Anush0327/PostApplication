@@ -10,9 +10,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.prodapt.learningspring.controller.binding.UserForm;
-import com.prodapt.learningspring.entity.User;
-import com.prodapt.learningspring.service.UserService;
+import com.prodapt.learningspring.controller.binding.RegistrationForm;
+import com.prodapt.learningspring.service.DomainUserService;
 
 
 @Controller
@@ -20,36 +19,35 @@ import com.prodapt.learningspring.service.UserService;
 public class RegistrationController {
     
     @Autowired
-    private UserService userService;
+    private DomainUserService domainUserService;
 
     @GetMapping
     public String getRegistrationForm(Model model) {
-        if (!model.containsAttribute("userForm")) {
-            model.addAttribute("userForm", new UserForm());
-        }
+        System.out.println("hello world");
+        if (!model.containsAttribute("registrationForm")) {
+            model.addAttribute("registrationForm", new RegistrationForm());
+          }
         return "register";
     }
 
     @PostMapping
-    public String register(@ModelAttribute("userForm") UserForm userForm, 
+    public String register(@ModelAttribute("registrationForm") RegistrationForm registrationForm, 
     BindingResult bindingResult, 
     RedirectAttributes attr) {
         if (bindingResult.hasErrors()) {
-            attr.addFlashAttribute("org.springframework.validation.BindingResult.userForm", bindingResult);
-            attr.addFlashAttribute("userForm", userForm);
-            return "redirect:/register";
+        attr.addFlashAttribute("org.springframework.validation.BindingResult.registrationForm", bindingResult);
+        attr.addFlashAttribute("registrationForm", registrationForm);
+        return "redirect:/register";
         }
-        if (!userForm.getPassword().equals(userForm.getPasswordRepeat())) {
-            attr.addFlashAttribute("message", "Passwords must match");
-            attr.addFlashAttribute("userForm", userForm);
-            return "redirect:/register";
+        if (!registrationForm.isValid()) {
+        attr.addFlashAttribute("message", "Passwords must match");
+        attr.addFlashAttribute("registrationForm", registrationForm);
+        return "redirect:/register";
         }
-        User userToCreate = new User();
-        userToCreate.setName(userForm.getName());
-        userToCreate.setPassword(userForm.getPassword());
-        userService.create(userToCreate);
+        System.out.println(domainUserService.save(registrationForm.getName(), registrationForm.getPassword()));
         attr.addFlashAttribute("result", "Registration success!");
-        return "redirect:/loginpage";
+        return "redirect:/login";
     }
+
 
 }

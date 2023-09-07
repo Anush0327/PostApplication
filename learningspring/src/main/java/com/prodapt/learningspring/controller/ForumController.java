@@ -1,10 +1,13 @@
 package com.prodapt.learningspring.controller;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -23,10 +26,11 @@ import com.prodapt.learningspring.entity.CommentRecord;
 import com.prodapt.learningspring.entity.LikeId;
 import com.prodapt.learningspring.entity.LikeRecord;
 import com.prodapt.learningspring.entity.Post;
+import com.prodapt.learningspring.entity.User;
 import com.prodapt.learningspring.repository.CommentCRUDRepository;
 import com.prodapt.learningspring.repository.LikeCRUDRepository;
 import com.prodapt.learningspring.repository.PostRepository;
-import com.prodapt.learningspring.service.UserService;
+import com.prodapt.learningspring.service.DomainUserService;
 
 import jakarta.servlet.ServletException;
 
@@ -38,7 +42,7 @@ public class ForumController {
   private PostRepository postRepository;
 
   @Autowired
-  private LoggedInUser loggedInUser;
+  private DomainUserService domainUserService;
 
   @Autowired
   private CommentCRUDRepository commentCRUDRepository;
@@ -46,34 +50,30 @@ public class ForumController {
   @Autowired
   private LikeCRUDRepository likeCRUDRepository;
 
-  @Autowired
-  UserService userService;
-  
-  @NeedsAuth(loginPage = "/loginpage")
   @GetMapping("/post/form")
   public String getPostForm(Model model) {
-    model.addAttribute("postForm", new AddPostForm());
+    AddPostForm postForm = new AddPostForm();
+    model.addAttribute("postForm", postForm);
     return "forum/postForm";
   }
   
 
   @PostMapping("/post/add")
-  public String addNewPost(@ModelAttribute("postForm") AddPostForm postForm, BindingResult bindingResult, RedirectAttributes attr) throws ServletException {
+  public String addNewPost(@ModelAttribute("postForm") AddPostForm postForm, BindingResult bindingResult, RedirectAttributes attr,@AuthenticationPrincipal UserDetails userDetails) throws ServletException {
     if (bindingResult.hasErrors()) {
       System.out.println(bindingResult.getFieldErrors());
       attr.addFlashAttribute("org.springframework.validation.BindingResult.post", bindingResult);
       attr.addFlashAttribute("post", postForm);
       return "redirect:/forum/post/form";
     }
-    var user = this.loggedInUser.getLoggedInUser();
+    var user = domainUserService.getByName(userDetails.getUsername()).get();
     if (user==null) {
-        return "redirect:/loginpage";
+        return "redirect:/login";
     }
-    var userId = user.getId();
-    var freshUser = userService.findById(userId);
     Post post = new Post();
-    post.setAuthor(freshUser.get());
+    post.setAuthor(user);
     post.setContent(postForm.getContent());
+    post.setTimeStamp(LocalDateTime.now());
     postRepository.save(post);
     return String.format("redirect:/forum/post/%d", post.getId());
   }
@@ -88,31 +88,30 @@ public class ForumController {
     int numLikes = likeCRUDRepository.countByLikeIdPost(post.get());
     List<LikeRecord> allLikers = likeCRUDRepository.findByLikeIdPost(post.get());
     List<CommentRecord> allCommentRecords = commentCRUDRepository.findAllByPost(post.get());
-    List<String> comments = allCommentRecords.stream().map(commentRecord -> commentRecord.getComment()).collect(Collectors.toList());
     List<String> likerNames = allLikers.stream().map(likeRecord -> likeRecord.getLikeId().getUser().getName()).collect(Collectors.toList());
-    model.addAttribute("AllComments", comments);
+    model.addAttribute("AllComments", allCommentRecords);
     model.addAttribute("likeCount", numLikes);
     model.addAttribute("allLikers", likerNames);
     return "forum/postDetail";
   }
   
   @PostMapping("/post/{id}/{user_id}/like")
-  public String postLike(@PathVariable int id,String Comment, RedirectAttributes attr) {
+  public String postLike(@PathVariable int id,String Comment, RedirectAttributes attr,@AuthenticationPrincipal UserDetails userDetails) {
     var post = postRepository.findById(id);
-    var user = this.loggedInUser.getLoggedInUser();
+    var user = domainUserService.getByName(userDetails.getUsername()).get();
     if(user==null){
-        return "redirect:/loginpage";
+        return "redirect:/login";
     }
-    var freshUser = userService.findById(user.getId());
     CommentRecord commentRecord = new CommentRecord();
     if(!Comment.equals(null)&&!Comment.equals("")){
       commentRecord.setPost(post.get());
-      commentRecord.setUser(freshUser.get());
+      commentRecord.setUser(user);
       commentRecord.setComment(Comment);
+      commentRecord.setTimeStamp(LocalDateTime.now());
       commentCRUDRepository.save(commentRecord);
     }
     LikeId likeId = new LikeId();
-    likeId.setUser(freshUser.get());
+    likeId.setUser(user);
     likeId.setPost(post.get());
     LikeRecord like = new LikeRecord();
     like.setLikeId(likeId);

@@ -83,7 +83,7 @@ input[type="submit"] {
 /* Style the comment and like buttons */
 input[type="submit"]:first-child {
     margin-right: 10px;
-    background-color: #28a745;
+    background-color: #ff6060;
 }
 
 /* Style the comment and like buttons on hover */
@@ -96,6 +96,7 @@ input[type="submit"]:hover {
 <body th:object="${post}">
 	<h1>Post by <span th:text="*{author.name}">John Doe</span></h1>
 	<p th:text="*{content}">This is a post.</p>
+	<p th:text="*{timeStamp}"> time stamp for creation</p>
 	<p>Likes: <span th:text="${likeCount}">0</span></p>
 	<button id="showLikers" >list of liked users</button>
 	<div id="unhideThisInJS" th:each="liker : ${allLikers}" style="visibility: hidden">
@@ -105,7 +106,8 @@ input[type="submit"]:hover {
 	</div>
 	<div id="AllComments" th:each="comment : ${AllComments}">
 		<ul>
-			<li th:text="${comment}">Comment</li>
+			<li th:text="${comment.comment}">Comment</li>
+			<span th:text="${comment.timeStamp}">timeStamp</span>
 		</ul>
 	</div>
 	<form method="post" action="#" th:action="@{/forum/post/{id}/{user_id}/like(id = ${post.id},user_id = *{author.id})}">
